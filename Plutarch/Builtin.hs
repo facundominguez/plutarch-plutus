@@ -45,6 +45,7 @@ import Plutarch (
   pcon,
   pcon',
   pdelay,
+  pfix,
   pforce,
   phoistAcyclic,
   plam,
@@ -56,7 +57,7 @@ import Plutarch (
   (#$),
   type (:-->),
  )
-import Plutarch.Bool (PBool (..), PEq, pif', (#&&), (#==))
+import Plutarch.Bool (PBool (..), PEq, pif, pif', (#&&), (#==))
 import Plutarch.ByteString (PByteString)
 import Plutarch.Integer (PInteger)
 import Plutarch.Lift (
@@ -83,12 +84,14 @@ import Plutarch.List (
     ptail
   ),
   phead,
+  pfoldr',
   plistEquals,
   pmap,
   pshowList,
   ptail,
  )
 import Plutarch.Show (PShow (pshow'), pshow)
+import Plutarch.String (PString)
 import Plutarch.Unit (PUnit)
 import Plutarch.Unsafe (punsafeBuiltin, punsafeCoerce, punsafeDowncast)
 import qualified PlutusCore as PLC
@@ -513,6 +516,41 @@ instance
         snd' = unTermCont $ fst <$> tcont (ptryFrom @b $ pforgetData $ psndBuiltin # tup)
     ver <- tcont $ plet $ ppairDataBuiltin # fst' # snd'
     pure $ (punsafeCoerce opq, ver)
+
+instance PShow PData where
+  pshow' b t0 = wrap (go0 # t0)
+     where
+       wrap s = pif (pconstant b) ("(" <> s <> ")") s
+       go0 :: Term s (PData :--> PString)
+       go0 = phoistAcyclic $ pfix #$ plam $ \go t ->
+         let pshowConstr pp0 = plet pp0 $ \pp ->
+               "Constr "
+               <> pshow' False (pfstBuiltin # pp)
+               <> " "
+               <> pshowListPString # (pmap # go # (psndBuiltin # pp))
+             pshowMap pplist =
+               "Map " <> pshowListPString # (pmap # pshowPair # pplist)
+             pshowPair = plam $ \pp0 -> plet pp0 $ \pp ->
+               "(" <> (go # (pfstBuiltin # pp))
+               <> ", " <> (go # (psndBuiltin # pp))
+               <> ")"
+             pshowList xs = "List " <> pshowListPString # (pmap # go # xs)
+             pshowListPString = phoistAcyclic $ plam $ \plist ->
+               "[" <>
+               pelimList
+                 (\x0 xs0 ->
+                   x0 <> (pfoldr' (\x r -> ", " <> x <> r) # ("" :: Term s PString) # xs0)
+                 )
+                 ""
+                 plist
+               <> "]"
+          in pforce $ pchooseData
+               # t
+               # pdelay (pshowConstr (pasConstr # t))
+               # pdelay (pshowMap (pasMap # t))
+               # pdelay (pshowList (pasList # t))
+               # pdelay ("I " <> pshow (pasInt # t))
+               # pdelay ("B " <> pshow (pasByteStr # t))
 
 pchooseData :: Term s (PData :--> a :--> a :--> a :--> a :--> a :--> a)
 pchooseData = phoistAcyclic $ pforce $ punsafeBuiltin PLC.ChooseData
