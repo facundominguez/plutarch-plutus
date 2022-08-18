@@ -65,7 +65,7 @@ import Plutarch.Lift (
   PUnsafeLiftDecl,
  )
 import qualified Plutarch.List as List
-import Plutarch.Show (PShow)
+import Plutarch.Show (PShow(pshow'))
 import Plutarch.Unsafe (punsafeCoerce, punsafeDowncast)
 import qualified PlutusTx.Monoid as PlutusTx
 import qualified PlutusTx.Semigroup as PlutusTx
@@ -98,6 +98,11 @@ newtype PValue (keys :: KeyGuarantees) (amounts :: AmountGuarantees) (s :: S)
     (PlutusType, PIsData)
     via (DerivePNewtype (PValue keys amounts) (PMap keys PCurrencySymbol (PMap keys PTokenName PInteger)))
 type role PValue nominal nominal nominal
+
+instance PShow (PValue keys amounts) where
+  pshow' b v = wrap $ "PValue " <> pshow (pto v)
+    where
+      wrap s = pif (pconstant b) ("(" <> s <> ")") s
 
 instance PUnsafeLiftDecl (PValue 'Unsorted 'NonZero) where
   type PLifted (PValue 'Unsorted 'NonZero) = Plutus.Value
