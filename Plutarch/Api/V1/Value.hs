@@ -65,6 +65,7 @@ import Plutarch.Lift (
   PUnsafeLiftDecl,
  )
 import qualified Plutarch.List as List
+import Plutarch.Show (PShow)
 import Plutarch.Unsafe (punsafeCoerce, punsafeDowncast)
 import qualified PlutusTx.Monoid as PlutusTx
 import qualified PlutusTx.Semigroup as PlutusTx
@@ -72,7 +73,7 @@ import qualified PlutusTx.Semigroup as PlutusTx
 import Plutarch.Prelude hiding (psingleton)
 
 newtype PTokenName (s :: S) = PTokenName (Term s PByteString)
-  deriving (PlutusType, PIsData, PEq, POrd) via (DerivePNewtype PTokenName PByteString)
+  deriving (PlutusType, PIsData, PEq, POrd, PShow) via (DerivePNewtype PTokenName PByteString)
 
 instance PUnsafeLiftDecl PTokenName where type PLifted PTokenName = Plutus.TokenName
 deriving via
@@ -81,7 +82,7 @@ deriving via
     PConstantDecl Plutus.TokenName
 
 newtype PCurrencySymbol (s :: S) = PCurrencySymbol (Term s PByteString)
-  deriving (PlutusType, PIsData, PEq, POrd) via (DerivePNewtype PCurrencySymbol PByteString)
+  deriving (PlutusType, PIsData, PEq, POrd, PShow) via (DerivePNewtype PCurrencySymbol PByteString)
 
 instance PUnsafeLiftDecl PCurrencySymbol where type PLifted PCurrencySymbol = Plutus.CurrencySymbol
 deriving via
