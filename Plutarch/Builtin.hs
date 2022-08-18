@@ -28,6 +28,7 @@ module Plutarch.Builtin (
   prememberData',
   ppairDataBuiltin,
   pchooseListBuiltin,
+  pchooseData,
   type PBuiltinMap,
 ) where
 
@@ -512,6 +513,9 @@ instance
         snd' = unTermCont $ fst <$> tcont (ptryFrom @b $ pforgetData $ psndBuiltin # tup)
     ver <- tcont $ plet $ ppairDataBuiltin # fst' # snd'
     pure $ (punsafeCoerce opq, ver)
+
+pchooseData :: Term s (PData :--> a :--> a :--> a :--> a :--> a :--> a)
+pchooseData = phoistAcyclic $ pforce $ punsafeBuiltin PLC.ChooseData
 
 ----------------------- other utility functions -----------------------------------------
 
